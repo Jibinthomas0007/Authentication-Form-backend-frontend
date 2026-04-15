@@ -1,2 +1,16 @@
-# Authentication-Form-backend-frontend
-A production-style full-stack authentication system using Laravel REST API with JWT and a React + Redux frontend. Features include secure login, registration, token-based authentication, protected routes, and role-based dashboards.
+# Laravel + React JWT Auth System
+
+This project is a full-stack authentication system built using Laravel as a backend API and React with Redux Toolkit as the frontend.
+
+## Features
+- User Registration & Login
+- JWT Authentication
+- Protected Routes
+- Role-Based Access (Admin/User)
+- RESTful API
+
+## Tech Stack
+- Laravel
+- React (Vite)
+- Redux Toolkit
+- JWT Auth
