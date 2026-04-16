@@ -2,31 +2,33 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
 {
-    /**
-     * Register User
-     */
-    public function register(array $data): array
+    protected $userRepo;
+
+    public function __construct(UserRepository $userRepo)
+    {
+        $this->userRepo = $userRepo;
+    }
+
+    public function register(array $data)
     {
         $loginInput = trim($data['login']);
 
-        // Detect email or phone
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
 
-        $user = User::create([
+        $user = $this->userRepo->create([
             'name' => $data['fullname'],
             'email' => $isEmail ? $loginInput : null,
             'phone' => !$isEmail ? $loginInput : null,
             'password' => Hash::make($data['password']),
-            'role' => 'customer', // default role
+            'role' => 'customer',
         ]);
 
-        // Generate JWT Token
         $token = JWTAuth::fromUser($user);
 
         return [
@@ -35,14 +37,10 @@ class AuthService
         ];
     }
 
-    /**
-     * Login User
-     */
-    public function login(array $data): ?array
+    public function login(array $data)
     {
         $loginInput = trim($data['login']);
 
-        // Detect login field
         $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL)
             ? 'email'
             : 'phone';
@@ -52,28 +50,22 @@ class AuthService
             'password' => $data['password'],
         ];
 
-        // Attempt login (JWT)
         if (!$token = auth('api')->attempt($credentials)) {
             return null;
         }
 
         return [
+            'access_token' => $token,
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => auth('api')->user(),
-            'token' => $token,
         ];
     }
 
-    /**
-     * Logout User
-     */
-    public function logout(): void
+    public function logout()
     {
-        JWTAuth::invalidate(JWTAuth::getToken());
+        auth('api')->logout();
     }
 
-    /**
-     * Get Authenticated User
-     */
     public function me()
     {
         return auth('api')->user();
@@ -81,11 +73,9 @@ class AuthService
 
     public function refresh()
     {
-        $newToken = JWTAuth::parseToken()->refresh();
-
-        return [
-            'token' => $newToken,
+        return response()->json([
+            'access_token' => auth('api')->refresh(),
             'user' => auth('api')->user()
-        ];
+        ]);
     }
 }

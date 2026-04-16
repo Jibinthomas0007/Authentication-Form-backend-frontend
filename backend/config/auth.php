@@ -41,7 +41,7 @@ return [
             'provider' => 'users',
         ],
         'api' => [
-            'driver' => 'jwt',       // ✅ JWT goes HERE
+            'driver' => 'jwt',     
             'provider' => 'users',
         ],
     ],

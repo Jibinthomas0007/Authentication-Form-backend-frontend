@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Services\AuthService;
+use App\Traits\ApiResponse;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+
     protected $authService;
 
     public function __construct(AuthService $authService)
@@ -16,66 +19,38 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    // ✅ Register
     public function register(RegisterRequest $request)
     {
         $data = $this->authService->register($request->validated());
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User registered successfully',
-            'data' => $data
-        ], 201);
+        return $this->success($data, 'User registered successfully', 201);
     }
 
-    // ✅ Login
     public function login(LoginRequest $request)
     {
         $data = $this->authService->login($request->validated());
 
         if (!$data) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid credentials'
-            ], 401);
+            return $this->error('Invalid credentials', 401);
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Login successful',
-            'data' => $data
-        ]);
+        return $this->success($data, 'Login successful');
     }
 
-    // ✅ Get logged-in user
     public function me()
     {
-        return response()->json([
-            'status' => 'success',
-            'data' => auth()->user()
-        ]);
+        return $this->success($this->authService->me());
     }
 
-    // ✅ Logout
     public function logout()
     {
-        auth()->logout();
+        $this->authService->logout();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Logged out successfully'
-        ]);
+        return $this->success(null, 'Logged out successfully');
     }
 
-    // ✅ Refresh token
     public function refresh()
     {
-        $data = $this->authService->refresh();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Token refreshed',
-            'data' => $data
-        ]);
+        return $this->success($this->authService->refresh(), 'Token refreshed');
     }
 }

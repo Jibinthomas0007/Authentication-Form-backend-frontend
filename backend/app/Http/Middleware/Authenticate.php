@@ -15,8 +15,11 @@ class Authenticate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check()) {
-            return redirect('/login'); 
+        if (!auth('api')->check()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized'
+            ], 401);
         }
 
         return $next($request);
