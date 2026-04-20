@@ -9,7 +9,9 @@ export const loginUser = createAsyncThunk(
       const res = await loginAPI(data);
       return res.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.response.data);
+      return thunkAPI.rejectWithValue(
+        err.response?.data || { message: "Server error" }
+      );
     }
   }
 );
@@ -22,7 +24,9 @@ export const registerUser = createAsyncThunk(
       const res = await registerAPI(data);
       return res.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.response.data);
+      return thunkAPI.rejectWithValue(
+        err.response?.data || { message: "Server error" }
+      );
     }
   }
 );

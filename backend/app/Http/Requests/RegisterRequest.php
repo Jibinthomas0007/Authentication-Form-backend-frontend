@@ -21,57 +21,38 @@ class RegisterRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
-    {
-        return [
-            'fullname' => 'required|string|max:100',
-            'login' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
+public function rules(): array
+{
+    return [
+        'fullname' => [
+            'required',
+            'string',
+            'min:3',
+            'max:100',
+            'regex:/^[a-zA-Z\s]+$/'
+        ],
 
-                    $value = trim($value);
+        'login' => ['required', new LoginRule(true)], // ✅ reuse rule
 
-                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                        if (User::where('email', $value)->exists()) {
-                            $fail('This email is already registered.');
-                        }
-                        return;
-                    }
+        'password' => [
+            'required',
+            'confirmed',
+            Password::min(8)
+                ->mixedCase()
+                ->numbers()
+                ->symbols(),
+        ],
+    ];
+}
 
-                    if (preg_match('/^\+?[0-9]{10,15}$/', $value)) {
-                        if (User::where('phone', $value)->exists()) {
-                            $fail('This phone number is already registered.');
-                        }
-                        return;
-                    }
+public function messages()
+{
+    return [
+        'fullname.required' => 'Full name is required',
+        'fullname.regex' => 'Only letters are allowed',
 
-                    $fail('Enter a valid email or phone number.');
-                },
-            ],
-            'password' => [
-                'required',
-                'confirmed',
-                Password::min(6)
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols(),
-            ],
-        ];
-    }
-
-    public function messages()
-    {
-        return [
-
-            'fullname.required' => 'Full name is required',
-
-            'login.required' => 'Email or phone is required',
-
-            'password.required' => 'Password is required',
-            'password' => 'Password must contain at least one uppercase letter, one number, and one special character (@, !, #)',
-            'password.min' => 'Password must be at least 6 characters',
-            'password.confirmed' => 'Passwords do not match',
-        ];
-    }
+        'password.required' => 'Password is required',
+        'password.confirmed' => 'Passwords do not match',
+    ];
+}
 }

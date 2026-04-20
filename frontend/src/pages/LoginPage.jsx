@@ -1,49 +1,74 @@
 import { useDispatch } from "react-redux";
 import { loginUser } from "../features/auth/authSlice";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+
+import FormWrapper from "../components/form/FormWrapper";
+import Input from "../components/form/Input";
+import Button from "../components/form/Button";
+
+import useFormValidation from "../hooks/useFormValidation";
+import { loginSchema } from "../validations/authSchemas";
+import { getErrorMessage } from "../utils/errorHandler";
+import { addToast } from "../features/toast/toastSlice";
 
 export default function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    login: "",
-    password: "",
-  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+  } = useFormValidation(loginSchema);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const res = await dispatch(loginUser(form));
+  const onSubmit = async (data) => {
+    const res = await dispatch(loginUser(data));
 
     if (res.meta.requestStatus === "fulfilled") {
       const role = res.payload.data.user.role;
 
-      if (role === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      dispatch(addToast({
+        type: "success",
+        message: "Login successful 🎉",
+      }));
+
+      navigate(role === "admin" ? "/admin-dashboard" : "/");
+    } else {
+      dispatch(addToast({
+        type: "error",
+        message: getErrorMessage(res.payload),
+      }));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Login</h2>
-
-      <input
-        placeholder="Email or Phone"
-        onChange={(e) => setForm({ ...form, login: e.target.value })}
+    <FormWrapper title="Welcome Back" onSubmit={handleSubmit(onSubmit)}>
+      
+      <Input
+        label="Email or Phone"
+        {...register("login")}
+        error={errors.login?.message}
+        disabled={isSubmitting}
       />
 
-      <input
+      <Input
+        label="Password"
         type="password"
-        placeholder="Password"
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
+        {...register("password")}
+        error={errors.password?.message}
+        disabled={isSubmitting}
       />
 
-      <button>Login</button>
-    </form>
+      <Button loading={isSubmitting} loadingText="Logging in..." disabled={!isValid}>
+        Login
+      </Button>
+
+      <p className="text-center text-sm text-gray-500 mt-5">
+        Don’t have an account?
+        <Link className="text-blue-500 ml-1" to="/register">
+          Register
+        </Link>
+      </p>
+    </FormWrapper>
   );
 }

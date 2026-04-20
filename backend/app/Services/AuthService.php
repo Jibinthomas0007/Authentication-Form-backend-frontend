@@ -37,8 +37,9 @@ class AuthService
         ];
     }
 
-    public function login(array $data)
-    {
+public function login(array $data)
+{
+    try {
         $loginInput = trim($data['login']);
 
         $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL)
@@ -55,12 +56,15 @@ class AuthService
         }
 
         return [
-            'access_token' => $token,
+            'token' => $token,
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => auth('api')->user(),
         ];
-    }
 
+    } catch (\Exception $e) {
+        throw new \Exception('Server error. Please try again later.');
+    }
+}
     public function logout()
     {
         auth('api')->logout();
@@ -71,11 +75,11 @@ class AuthService
         return auth('api')->user();
     }
 
-    public function refresh()
-    {
-        return response()->json([
-            'access_token' => auth('api')->refresh(),
-            'user' => auth('api')->user()
-        ]);
-    }
+public function refresh()
+{
+    return [
+        'token' => auth('api')->refresh(),
+        'user' => auth('api')->user()
+    ];
+}
 }

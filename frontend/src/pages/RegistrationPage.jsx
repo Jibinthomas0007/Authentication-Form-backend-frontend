@@ -1,58 +1,62 @@
 import { useDispatch } from "react-redux";
 import { registerUser } from "../features/auth/authSlice";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+
+import FormWrapper from "../components/form/FormWrapper";
+import Input from "../components/form/Input";
+import Button from "../components/form/Button";
+
+import useFormValidation from "../hooks/useFormValidation";
+import { registerSchema } from "../validations/authSchemas";
+import { getErrorMessage } from "../utils/errorHandler";
+import { addToast } from "../features/toast/toastSlice";
 
 export default function RegisterPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    fullname: "",
-    login: "",
-    password: "",
-    password_confirmation: "",
-  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+  } = useFormValidation(registerSchema);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const res = await dispatch(registerUser(form));
+  const onSubmit = async (data) => {
+    const res = await dispatch(registerUser(data));
 
     if (res.meta.requestStatus === "fulfilled") {
-      navigate("/dashboard");
+      dispatch(addToast({
+        type: "success",
+        message: "Account created successfully 🎉",
+      }));
+
+      navigate("/");
+    } else {
+      dispatch(addToast({
+        type: "error",
+        message: getErrorMessage(res.payload),
+      }));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Register</h2>
+    <FormWrapper title="Create Account" onSubmit={handleSubmit(onSubmit)}>
 
-      <input
-        placeholder="Full Name"
-        onChange={(e) => setForm({ ...form, fullname: e.target.value })}
-      />
+      <Input label="Full Name" {...register("fullname")} error={errors.fullname?.message} />
+      <Input label="Email or Phone" {...register("login")} error={errors.login?.message} />
+      <Input label="Password" type="password" {...register("password")} error={errors.password?.message} />
+      <Input label="Confirm Password" type="password" {...register("password_confirmation")} error={errors.password_confirmation?.message} />
 
-      <input
-        placeholder="Email or Phone"
-        onChange={(e) => setForm({ ...form, login: e.target.value })}
-      />
+      <Button loading={isSubmitting} loadingText="Creating account..." disabled={!isValid}>
+        Register
+      </Button>
 
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
-      />
-
-      <input
-        type="password"
-        placeholder="Confirm Password"
-        onChange={(e) =>
-          setForm({ ...form, password_confirmation: e.target.value })
-        }
-      />
-
-      <button>Register</button>
-    </form>
+      <p className="text-center text-sm text-gray-500 mt-5">
+        Already have an account?
+        <Link className="text-blue-500 ml-1" to="/login">
+          Login
+        </Link>
+      </p>
+    </FormWrapper>
   );
 }
