@@ -37,34 +37,35 @@ class AuthService
         ];
     }
 
-public function login(array $data)
-{
-    try {
-        $loginInput = trim($data['login']);
+    public function login(array $data)
+    {
+        try {
+            $loginInput = trim($data['login']);
 
-        $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL)
-            ? 'email'
-            : 'phone';
+            $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL)
+                ? 'email'
+                : 'phone';
 
-        $credentials = [
-            $field => $loginInput,
-            'password' => $data['password'],
-        ];
+            $credentials = [
+                $field => $loginInput,
+                'password' => $data['password'],
+            ];
 
-        if (!$token = auth('api')->attempt($credentials)) {
-            return null;
+            if (!$token = auth('api')->attempt($credentials)) {
+                return null;
+            }
+
+            return [
+                'token' => $token,
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'user' => auth('api')->user(),
+            ];
+
+        } catch (\Exception $e) {
+            throw new \Exception('Server error. Please try again later.');
         }
-
-        return [
-            'token' => $token,
-            'expires_in' => auth('api')->factory()->getTTL() * 60,
-            'user' => auth('api')->user(),
-        ];
-
-    } catch (\Exception $e) {
-        throw new \Exception('Server error. Please try again later.');
     }
-}
+    
     public function logout()
     {
         auth('api')->logout();
@@ -75,11 +76,11 @@ public function login(array $data)
         return auth('api')->user();
     }
 
-public function refresh()
-{
-    return [
-        'token' => auth('api')->refresh(),
-        'user' => auth('api')->user()
-    ];
-}
+    public function refresh()
+    {
+        return [
+            'token' => auth('api')->refresh(),
+            'user' => auth('api')->user()
+        ];
+    }   
 }

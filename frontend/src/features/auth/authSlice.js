@@ -1,6 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { loginAPI, registerAPI, getMeAPI } from "./authAPI";
 
+// 🔥 Get auth from localStorage
+const storedAuth = JSON.parse(localStorage.getItem("auth"));
+
+/* =========================
+   ASYNC THUNKS
+========================= */
+
 // LOGIN
 export const loginUser = createAsyncThunk(
   "auth/login",
@@ -37,35 +44,56 @@ export const getUser = createAsyncThunk("auth/me", async () => {
   return res.data;
 });
 
+/* =========================
+   SLICE
+========================= */
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
-    token: localStorage.getItem("token") || null,
+    user: storedAuth?.user || null,
+    token: storedAuth?.token || null,
     loading: false,
     error: null,
   },
+
   reducers: {
     logout: (state) => {
       state.user = null;
       state.token = null;
-      localStorage.removeItem("token");
+
+      // 🔥 remove full auth object
+      localStorage.removeItem("auth");
     },
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
+        const user = action.payload.data.user;
+        const token = action.payload.data.token;
 
-        localStorage.setItem("token", action.payload.data.token);
+        state.user = user;
+        state.token = token;
+
+        // 🔥 store combined object
+        localStorage.setItem(
+          "auth",
+          JSON.stringify({ user, token })
+        );
       })
 
       .addCase(registerUser.fulfilled, (state, action) => {
-        state.user = action.payload.data.user;
-        state.token = action.payload.data.token;
+        const user = action.payload.data.user;
+        const token = action.payload.data.token;
 
-        localStorage.setItem("token", action.payload.data.token);
+        state.user = user;
+        state.token = token;
+
+        localStorage.setItem(
+          "auth",
+          JSON.stringify({ user, token })
+        );
       });
   },
 });

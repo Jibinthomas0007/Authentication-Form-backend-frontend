@@ -7,6 +7,7 @@ const API = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
+// 🔄 Process queued requests
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
@@ -16,28 +17,38 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// 🔹 REQUEST INTERCEPTOR
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+/* =========================
+   REQUEST INTERCEPTOR
+========================= */
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+API.interceptors.request.use((config) => {
+  const auth = JSON.parse(localStorage.getItem("auth"));
+
+  if (auth?.token) {
+    config.headers.Authorization = `Bearer ${auth.token}`;
   }
 
   return config;
 });
 
-// 🔥 SINGLE RESPONSE INTERCEPTOR
+/* =========================
+   RESPONSE INTERCEPTOR
+========================= */
+
 API.interceptors.response.use(
   (response) => response,
+
   async (error) => {
     const originalRequest = error.config;
 
-    // 🔥 Handle 401 (token expired)
+    // 🔥 Handle token expiry
     if (error.response?.status === 401 && !originalRequest._retry) {
 
-      // ❗ Avoid refreshing login/register
-      if (originalRequest.url.includes("/login") || originalRequest.url.includes("/register")) {
+      // ❗ skip login/register
+      if (
+        originalRequest.url.includes("/login") ||
+        originalRequest.url.includes("/register")
+      ) {
         return Promise.reject(error);
       }
 
@@ -45,7 +56,7 @@ API.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then((token) => {
-          originalRequest.headers["Authorization"] = "Bearer " + token;
+          originalRequest.headers.Authorization = "Bearer " + token;
           return API(originalRequest);
         });
       }
@@ -54,30 +65,41 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const auth = JSON.parse(localStorage.getItem("auth"));
+
         const res = await axios.post(
           "http://127.0.0.1:8000/api/refresh",
           {},
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${auth?.token}`,
             },
           }
         );
 
-        const newToken = res.data.access_token;
+        // 🔥 adjust based on your backend response
+        const newToken = res.data.data.token;
 
-        localStorage.setItem("token", newToken);
+        // 🔥 update storage
+        const updatedAuth = {
+          ...auth,
+          token: newToken,
+        };
+
+        localStorage.setItem("auth", JSON.stringify(updatedAuth));
 
         processQueue(null, newToken);
 
-        originalRequest.headers["Authorization"] = "Bearer " + newToken;
+        originalRequest.headers.Authorization = "Bearer " + newToken;
 
         return API(originalRequest);
+
       } catch (err) {
         processQueue(err, null);
 
-        localStorage.removeItem("token");
+        localStorage.removeItem("auth");
 
+        // 🔥 redirect safely
         if (window.location.pathname !== "/login") {
           window.location.href = "/login";
         }

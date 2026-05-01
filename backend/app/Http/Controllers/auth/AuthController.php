@@ -26,21 +26,21 @@ class AuthController extends Controller
         return $this->success($data, 'User registered successfully', 201);
     }
 
-public function login(LoginRequest $request)
-{
-    try {
-        $data = $this->authService->login($request->validated());
+    public function login(LoginRequest $request)
+    {
+        try {
+            $data = $this->authService->login($request->validated());
 
-        if (!$data) {
-            return $this->error('Invalid credentials', 401);
+            if (!$data) {
+                return $this->error('Invalid credentials', 401);
+            }
+
+            return $this->success($data, 'Login successful');
+
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 500);
         }
-
-        return $this->success($data, 'Login successful');
-
-    } catch (\Exception $e) {
-        return $this->error($e->getMessage(), 500);
     }
-}
 
     public function me()
     {
